@@ -2,10 +2,9 @@
 
 import tqdm
 import torch as T
-import torch.nn as nn
 import torch.optim as optim
 from torchvision.datasets import FashionMNIST
-from torchvision.transforms import ToTensor, ToPILImage
+from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 from vae import ae_modeling
 from PIL import Image
@@ -14,7 +13,7 @@ import numpy as np
 
 batch_size = 256
 learning_rate = 0.001
-num_epochs = 5
+num_epochs = 25
 
 
 def save_original_reconstructed_images(model, test_dataset, save_folder):
@@ -78,6 +77,7 @@ device = T.device("cuda:0")
 # Initialize the autoencoder model
 # model = ae_modeling.AutoEncoder()
 from vae import vae_modeling
+
 encoder = vae_modeling.VAEEncoder()
 decoder = ae_modeling.AEDecoder()
 model = vae_modeling.VAE(encoder, decoder)
@@ -108,6 +108,9 @@ for epoch in tqdm.tqdm(range(num_epochs), total=num_epochs):
   )
 
 print("Training finished!")
+
+# Save the model
+T.save(model.state_dict(), 'saved_models/vae.pt')
 
 # Set the model to evaluation mode
 model.eval()

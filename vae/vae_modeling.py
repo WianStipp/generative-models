@@ -7,7 +7,6 @@ We can sample from the latent space using z = z_mean + exp(z_log_var * 0.5) * ep
 
 from typing import Tuple
 import torch as T
-import torch.nn.functional as F
 import torch.nn as nn
 
 from vae import ae_modeling, vae_generic
@@ -34,11 +33,12 @@ class VAEEncoder(nn.Module):
     z_log_var = self.z_log_var_dense(x)
     batch_size, dim = z_mu.shape
     z = z_mu + T.exp(z_log_var * 0.5) * T.normal(T.zeros(
-      (batch_size, dim)), T.ones((batch_size, dim))).to(z_mu.device)
+        (batch_size, dim)), T.ones((batch_size, dim))).to(z_mu.device)
     return z, z_mu, z_log_var
 
 
-def sample_z(z_mu: T.Tensor, z_log_var: T.Tensor, device: T.device) -> T.Tensor:
+def sample_z(z_mu: T.Tensor, z_log_var: T.Tensor,
+             device: T.device) -> T.Tensor:
   """Sample a latent vector z from the mean and log var vectors
   using the reparameterization trick for backprop."""
   batch_size, dim = z_mu.shape
@@ -61,8 +61,8 @@ class VAE(nn.Module):
     z, z_mu, z_log_var = self.encoder(image)
     reconstruction = self.decoder(z)
     reconstruction_loss = self.beta * T.sqrt(self.loss(image, reconstruction))
-    kl_penalty = T.mean(-0.5 * T.sum(1 + z_log_var - T.square(z_mu) -
-                              T.exp(z_log_var), dim=1))
+    kl_penalty = T.mean(
+        -0.5 * T.sum(1 + z_log_var - T.square(z_mu) - T.exp(z_log_var), dim=1))
     loss = reconstruction_loss + kl_penalty
     return vae_generic.VAEOutput(reconstruction, loss)
 
