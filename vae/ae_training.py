@@ -14,8 +14,7 @@ from PIL import Image
 import os
 import numpy as np
 
-
-from vae import vae_modeling
+from vae import vae_modeling, vae_generic
 
 learning_rate = 0.001
 
@@ -64,28 +63,31 @@ def save_original_reconstructed_images(model, test_dataset, save_folder):
     reconstructed_save_path = os.path.join(save_folder, reconstructed_filename)
     reconstructed_image.save(reconstructed_save_path)
 
+
 def select_datasets(dataset_name: str) -> Tuple[Dataset, Dataset]:
   if dataset_name == 'fashion_mnist':
     train_dataset = FashionMNIST(root="./data",
-                                train=True,
-                                download=True,
-                                transform=ToTensor())
+                                 train=True,
+                                 download=True,
+                                 transform=ToTensor())
     test_dataset = FashionMNIST(root="./data",
                                 train=False,
                                 download=True,
                                 transform=ToTensor())
   elif dataset_name == 'celeba':
+    # load and rehape CelebA images to 64 * 64
     train_dataset = CelebA(root="/mnt/data/torch_datasets",
-                                train=True,
-                                download=True,
-                                transform=ToTensor())
+                           split='train',
+                           download=True,
+                           transform=vae_generic.ToResizedTensor((64, 64)))
     test_dataset = CelebA(root="/mnt/data/torch_datasets",
-                                train=False,
-                                download=True,
-                                transform=ToTensor())
+                          split='test',
+                          download=True,
+                          transform=vae_generic.ToResizedTensor((64, 64)))
   else:
     raise ValueError(f"{dataset_name=} not supported.")
   return (train_dataset, test_dataset)
+
 
 def select_model(model_name: str) -> nn.Module:
   if model_name == 'fashion_mnist_autoencoder':
@@ -96,12 +98,14 @@ def select_model(model_name: str) -> nn.Module:
     return vae_modeling.VAE(encoder, decoder)
   raise ValueError(f"{model_name=} not supported.")
 
+
 @click.command()
 @click.option('--dataset_name')
 @click.option('--model_name')
 @click.option('--num_epochs', default=2, type=int)
 @click.option('--batch_size', default=256, type=int)
-def main(dataset_name: str, model_name: str, num_epochs: int, batch_size: int) -> None:
+def main(dataset_name: str, model_name: str, num_epochs: int,
+         batch_size: int) -> None:
   train_dataset, test_dataset = select_datasets(dataset_name)
   train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
   device = T.device("cuda:0")
@@ -115,7 +119,7 @@ def main(dataset_name: str, model_name: str, num_epochs: int, batch_size: int) -
   for epoch in tqdm.tqdm(range(num_epochs), total=num_epochs):
     running_loss = 0.0
     for images, _ in tqdm.tqdm(train_loader,
-                              total=len(train_dataset) // batch_size):
+                               total=len(train_dataset) // batch_size):
       images = images.to(device)
       # Forward pass
       _, loss = model(images)
@@ -139,6 +143,7 @@ def main(dataset_name: str, model_name: str, num_epochs: int, batch_size: int) -
   # Make predictions and save the reconstructed images
   save_original_reconstructed_images(model, test_dataset, save_folder)
   print("Reconstructed images saved!")
+
 
 if __name__ == "__main__":
   main()
