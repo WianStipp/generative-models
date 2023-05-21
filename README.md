@@ -15,8 +15,14 @@ A study of generative models using [David Foster's book](https://www.amazon.com/
 - [ ] World models
 - [ ] Multimodal models
 
-![VAE fashion MNIST](images/vae.png)
+VAE trained on [CelebA](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html
+):
+
 ![celeba35](images/reconstructed_000035.png)
 ![celeba65](images/reconstructed_000065.png)
 ![celeba79](images/reconstructed_000079.png)
 ![celeba94](images/reconstructed_000094.png)
+
+VAE latent space with class labels on FashionMNIST:
+
+![VAE fashion MNIST](images/vae.png)
