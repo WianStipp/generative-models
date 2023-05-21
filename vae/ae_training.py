@@ -63,6 +63,43 @@ def save_original_reconstructed_images(model, test_dataset, save_folder):
     reconstructed_save_path = os.path.join(save_folder, reconstructed_filename)
     reconstructed_image.save(reconstructed_save_path)
 
+def save_original_reconstructed_images_celeba(model, test_dataset, save_folder):
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
+    device = next(model.parameters()).device  # Get the device of the model parameters
+
+    for i, (image, _) in enumerate(test_dataset):
+        # Move image tensor to the same device as the model
+        if i > 10:
+          break
+        image = image.to(device)
+
+        # Forward pass
+        output, _ = model(image.unsqueeze(0))
+        reconstructed_image = output.squeeze(0).detach().cpu()
+
+        # Convert tensors to NumPy ndarrays
+        original_image = image.squeeze(0).permute(1, 2, 0).cpu().numpy()
+        reconstructed_image = reconstructed_image.permute(1, 2, 0).numpy()
+
+        # Scale the pixel values to [0, 255]
+        original_image = (original_image * 255).astype(np.uint8)
+        reconstructed_image = (reconstructed_image * 255).astype(np.uint8)
+
+        # Create PIL Images from the NumPy arrays
+        original_image = Image.fromarray(original_image)
+        reconstructed_image = Image.fromarray(reconstructed_image)
+
+        # Save the original image with a sequential filename
+        original_filename = f"original_{i:06d}.png"
+        original_save_path = os.path.join(save_folder, original_filename)
+        original_image.save(original_save_path)
+
+        # Save the reconstructed image with a sequential filename
+        reconstructed_filename = f"reconstructed_{i:06d}.png"
+        reconstructed_save_path = os.path.join(save_folder, reconstructed_filename)
+        reconstructed_image.save(reconstructed_save_path)
 
 def select_datasets(dataset_name: str) -> Tuple[Dataset, Dataset]:
   if dataset_name == 'fashion_mnist':
@@ -96,6 +133,10 @@ def select_model(model_name: str) -> nn.Module:
     encoder = vae_modeling.VAEEncoder()
     decoder = ae_modeling.AEDecoder()
     return vae_modeling.VAE(encoder, decoder)
+  elif model_name == 'celeba_vae':
+    encoder = vae_modeling.VAEFaceEncoder()
+    decoder = vae_modeling.VAEFaceDecoder()
+    return vae_modeling.FaceVAE(encoder, decoder)
   raise ValueError(f"{model_name=} not supported.")
 
 
@@ -108,8 +149,10 @@ def main(dataset_name: str, model_name: str, num_epochs: int,
          batch_size: int) -> None:
   train_dataset, test_dataset = select_datasets(dataset_name)
   train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-  device = T.device("cuda:0")
+  device = T.device("cuda")
   model = select_model(model_name)
+  model = model.to(device)
+  model = nn.DataParallel(model)
   model.to(device)
 
   # Define loss function and optimizer
@@ -125,6 +168,7 @@ def main(dataset_name: str, model_name: str, num_epochs: int,
       _, loss = model(images)
       # Backward and optimize
       optimizer.zero_grad()
+      loss = T.mean(loss)
       loss.backward()
       optimizer.step()
       running_loss += loss.item()
@@ -141,7 +185,7 @@ def main(dataset_name: str, model_name: str, num_epochs: int,
   # Specify the folder to save the reconstructed images
   save_folder = "./reconstructed_images"
   # Make predictions and save the reconstructed images
-  save_original_reconstructed_images(model, test_dataset, save_folder)
+  save_original_reconstructed_images_celeba(model, test_dataset, save_folder)
   print("Reconstructed images saved!")
 
 
