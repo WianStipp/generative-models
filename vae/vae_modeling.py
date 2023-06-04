@@ -184,7 +184,7 @@ class FaceVAE(nn.Module):
   def forward(self, image: T.Tensor) -> vae_generic.VAEOutput:
     z, z_mu, z_log_var = self.encoder(image)
     reconstruction = self.decoder(z)
-    reconstruction_loss = self.beta * T.sqrt(self.loss(image, reconstruction))
+    reconstruction_loss = self.beta * self.loss(image, reconstruction)
     kl_penalty = T.mean(
         -0.5 * T.sum(1 + z_log_var - T.square(z_mu) - T.exp(z_log_var), dim=1))
     loss = reconstruction_loss + kl_penalty
