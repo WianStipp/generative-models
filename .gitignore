@@ -1,6 +1,9 @@
 .vscode/
 data/
+wandb/
 reconstructed_images/
+reconstructed_images_test/
+saved_models/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
