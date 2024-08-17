@@ -4,7 +4,7 @@ import torch as T
 from torch import nn
 import torch.nn.functional as F
 
-from vae import vae_generic
+from ae import vae_generic
 
 
 class AEEncoder(nn.Module):

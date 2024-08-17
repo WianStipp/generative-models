@@ -5,7 +5,7 @@ import torch as T
 from torchvision.datasets import FashionMNIST
 from torchvision.transforms import ToTensor
 
-from vae import vae_modeling, ae_modeling
+from ae import vae_modeling, ae_modeling
 
 device = T.device("cuda:0")
 encoder = vae_modeling.VAEEncoder()

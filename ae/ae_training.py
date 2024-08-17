@@ -11,12 +11,12 @@ import torch.optim as optim
 from torchvision.datasets import FashionMNIST, CelebA
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader, Dataset
-from vae import ae_modeling
+from ae import ae_modeling
 from PIL import Image
 import os
 import numpy as np
 
-from vae import vae_modeling, vae_generic
+from ae import vae_modeling, vae_generic
 
 learning_rate = 0.0005
 

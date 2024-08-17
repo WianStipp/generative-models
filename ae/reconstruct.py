@@ -5,7 +5,7 @@ import torch.nn as nn
 from torchvision.transforms import ToTensor
 from PIL import Image
 
-from vae import vae_modeling, ae_training
+from ae import vae_modeling, ae_training
 
 device = T.device("cuda:0")
 encoder = vae_modeling.VAEFaceEncoder()

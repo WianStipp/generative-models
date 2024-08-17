@@ -10,7 +10,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 
-from vae import ae_modeling, vae_generic
+from ae import ae_modeling, vae_generic
 
 
 class VAEEncoder(nn.Module):
