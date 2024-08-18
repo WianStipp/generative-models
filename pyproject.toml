@@ -11,6 +11,7 @@ python = "^3.10"
 torch = "^2.4.0"
 gdown = "^5.2.0"
 torchvision = "^0.19.0"
+pydantic = "^2.8.2"
 
 
 [tool.poetry.group.dev.dependencies]
