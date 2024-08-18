@@ -1,0 +1,8 @@
+config:
+  type_: "CNN"
+  latent_dims: 32
+  input_shape: [3, 64, 64]
+  channels: [32, 64, 128, 256, 512]
+  kernel_sizes: [3, 3, 3, 3, 3]
+  strides: [2, 2, 2, 2, 2]
+  activation: "LeakyRELU"
