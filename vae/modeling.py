@@ -116,6 +116,16 @@ class CNNDecoder(BaseDecoder):
             layers.append(getattr(nn, self.config.activation_fn)())
             layers.append(nn.Dropout2d(self.config.dropout_rate))
             in_channels = out_channels
+        layers.append(
+            nn.ConvTranspose2d(
+                in_channels=config.channels[0],
+                out_channels=config.input_shape[0],
+                kernel_size=config.kernel_sizes[0],
+                stride=config.strides[0],
+                output_padding=config.strides[0] - 1,
+            )
+        )
+
         layers.append(nn.Sigmoid())
         return layers
 
@@ -131,10 +141,26 @@ class VAE(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x: T.Tensor) -> T.Tensor:
+    def forward(self, x: T.Tensor) -> Tuple[T.Tensor, T.Tensor]:
         mu, log_var = cast(EncoderOutput, self.encoder(x))
-        z = None  # TODO
-        return self.decoder(mu)
+        z = self.sample_z_from_mean_logvar(mu, log_var)
+        x_hat = self.decoder(z)
+        kl_term = T.mean(
+            0.5 * T.sum(1 + log_var - T.square(mu) - T.exp(log_var), dim=1)
+        )
+        print(x.shape, x_hat.shape)
+        loss = F.mse_loss(x_hat, x, reduction="mean") - kl_term
+        return loss, x_hat
+
+    def sample_z(self, x: T.Tensor) -> T.Tensor:
+        mu, log_var = cast(EncoderOutput, self.encoder(x))
+        return self.sample_z_from_mean_logvar(mu, log_var)
+
+    @staticmethod
+    def sample_z_from_mean_logvar(mu: T.Tensor, log_var: T.Tensor) -> T.Tensor:
+        eps = T.randn(size=mu.shape).to(mu.device)
+        z = mu + (T.sqrt(T.exp(log_var)) * eps)
+        return z
 
     @classmethod
     def from_config(cls, config: BaseVAEConfig) -> "VAE":

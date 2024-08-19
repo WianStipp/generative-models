@@ -8,7 +8,7 @@ def main() -> None:
     vae = modeling.VAE.from_config(config)
     print(vae)
     x = T.randn(2, 3, 64, 64)
-    print(vae(x))
+    vae(x)
 
 
 if __name__ == "__main__":
