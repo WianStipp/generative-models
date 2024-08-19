@@ -148,7 +148,6 @@ class VAE(nn.Module):
         kl_term = T.mean(
             0.5 * T.sum(1 + log_var - T.square(mu) - T.exp(log_var), dim=1)
         )
-        print(x.shape, x_hat.shape)
         loss = F.mse_loss(x_hat, x, reduction="mean") - kl_term
         return loss, x_hat
 

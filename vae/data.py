@@ -9,7 +9,7 @@ DATA_FOLDER = "data/"
 class CelebAVAETransform:
     """Transformation of CelebA data for VAE training"""
 
-    def __init__(self, dims: int = 128) -> None:
+    def __init__(self, dims: int = 64) -> None:
         self.piltotensor = transforms.ToTensor()
         self.resizer = transforms.Resize((dims, dims))
 
@@ -24,16 +24,16 @@ class CelebADatasets(NamedTuple):
 
 
 def get_celeba_datasets(root_folder: str = DATA_FOLDER) -> CelebADatasets:
-    train = datasets.CelebA(
-        root=root_folder, split="train", transform=CelebAVAETransform(), download=True
-    )
-    validation = datasets.CelebA(
-        root=root_folder, split="valid", transform=CelebAVAETransform(), download=True
-    )
-    test = datasets.CelebA(
-        root=root_folder, split="test", transform=CelebAVAETransform(), download=True
-    )
+    train = get_celeba_split("train")
+    validation = get_celeba_split("valid")
+    test = get_celeba_split("test")
     return CelebADatasets(train, validation, test)
+
+
+def get_celeba_split(split: str, root_folder: str = DATA_FOLDER) -> datasets.CelebA:
+    return datasets.CelebA(
+        root=root_folder, split=split, transform=CelebAVAETransform(), download=True
+    )
 
 
 def main() -> None:
