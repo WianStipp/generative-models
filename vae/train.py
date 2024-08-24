@@ -10,6 +10,7 @@ from vae import modeling, data
 
 N_EPOCHS = 3
 BATCH_SIZE = 64
+LOG_STEPS = 10
 
 
 def main() -> None:
@@ -37,12 +38,14 @@ def main() -> None:
             optimizer.step()
             running_loss += loss.item()
 
-            if i % 10 == 9:
-                last_loss = running_loss / 10  # loss per batch
-                print("  batch {} loss: {}".format(i + 1, last_loss))
-                tb_x = epoch_idx * len(train_loader) + i + 1
-                writer.add_scalar("Loss/train", last_loss, tb_x)
-                running_loss = 0.0
+            do_log = i % LOG_STEPS == (LOG_STEPS - 1)
+            if not do_log:
+                continue
+            last_loss = running_loss / LOG_STEPS  # loss per batch
+            print("  batch {} loss: {}".format(i + 1, last_loss))
+            tb_x = epoch_idx * len(train_loader) + i + 1
+            writer.add_scalar("Loss/train", last_loss, tb_x)
+            running_loss = 0.0
 
     @T.no_grad()
     def validation_step(epoch_idx: int) -> None:
