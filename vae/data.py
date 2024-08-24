@@ -24,9 +24,9 @@ class CelebADatasets(NamedTuple):
 
 
 def get_celeba_datasets(root_folder: str = DATA_FOLDER) -> CelebADatasets:
-    train = get_celeba_split("train")
-    validation = get_celeba_split("valid")
-    test = get_celeba_split("test")
+    train = get_celeba_split("train", root_folder)
+    validation = get_celeba_split("valid", root_folder)
+    test = get_celeba_split("test", root_folder)
     return CelebADatasets(train, validation, test)
 
 
