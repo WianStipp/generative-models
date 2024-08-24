@@ -5,12 +5,15 @@ import pydantic
 import torch as T
 from torch import nn
 import torch.nn.functional as F
+from torchvision import transforms
+
+BETA_COEF = 0.0005
 
 
 class BaseVAEConfig(pydantic.BaseModel, abc.ABC):
     latent_dims: int
     activation_fn: str = "ReLU"
-    dropout_rate: float = pydantic.Field(default=0.1, ge=0.0, le=1.0)
+    dropout_rate: float = pydantic.Field(default=0.0, ge=0.0, le=1.0)
 
     @classmethod
     def from_path(cls, path: str) -> "BaseVAEConfig":
@@ -64,8 +67,10 @@ class CNNEncoder(BaseEncoder):
                     out_channels=out_channels,
                     kernel_size=kernel_size,
                     stride=stride,
+                    padding=1,
                 )
             )
+            layers.append(nn.BatchNorm2d(out_channels))
             layers.append(getattr(nn, self.config.activation_fn)())
             layers.append(nn.Dropout2d(self.config.dropout_rate))
             in_channels = out_channels
@@ -97,6 +102,12 @@ class CNNDecoder(BaseDecoder):
         )
         layers = self._create_layers()
         self.layers = nn.Sequential(*layers)
+        self.decoder_transform = transforms.Compose(
+            [
+                transforms.Resize(self.config.input_shape[1], antialias=True),
+                transforms.CenterCrop(self.config.input_shape[1]),
+            ]
+        )
 
     def _create_layers(self) -> List[nn.Module]:
         config = self.config
@@ -111,8 +122,11 @@ class CNNDecoder(BaseDecoder):
                     out_channels=out_channels,
                     kernel_size=kernel_size,
                     stride=stride,
+                    padding=1,
+                    output_padding=1,
                 )
             )
+            layers.append(nn.BatchNorm2d(out_channels))
             layers.append(getattr(nn, self.config.activation_fn)())
             layers.append(nn.Dropout2d(self.config.dropout_rate))
             in_channels = out_channels
@@ -132,7 +146,8 @@ class CNNDecoder(BaseDecoder):
     def forward(self, z: T.Tensor) -> T.Tensor:
         x = self.input_projection(z)
         x = x.view(-1, self.config.channels[-1], 1, 1)
-        return self.layers(x)
+        x = self.layers(x)
+        return self.decoder_transform(x)
 
 
 class VAE(nn.Module):
@@ -144,16 +159,19 @@ class VAE(nn.Module):
     def forward(self, x: T.Tensor) -> Tuple[T.Tensor, T.Tensor]:
         mu, log_var = cast(EncoderOutput, self.encoder(x))
         z = self.sample_z_from_mean_logvar(mu, log_var)
-        x_hat = self.decoder(z)
+        x_hat = self.generate_from_z(z)
         kl_term = T.mean(
             0.5 * T.sum(1 + log_var - T.square(mu) - T.exp(log_var), dim=1)
         )
-        loss = F.mse_loss(x_hat, x, reduction="mean") - kl_term
+        loss = F.mse_loss(x_hat, x, reduction="mean") - kl_term * BETA_COEF
         return loss, x_hat
 
     def sample_z(self, x: T.Tensor) -> T.Tensor:
         mu, log_var = cast(EncoderOutput, self.encoder(x))
         return self.sample_z_from_mean_logvar(mu, log_var)
+
+    def generate_from_z(self, z: T.Tensor) -> T.Tensor:
+        return self.decoder(z)
 
     @staticmethod
     def sample_z_from_mean_logvar(mu: T.Tensor, log_var: T.Tensor) -> T.Tensor:

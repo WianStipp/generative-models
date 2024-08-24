@@ -10,11 +10,16 @@ class CelebAVAETransform:
     """Transformation of CelebA data for VAE training"""
 
     def __init__(self, dims: int = 64) -> None:
-        self.piltotensor = transforms.ToTensor()
-        self.resizer = transforms.Resize((dims, dims))
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize(dims, antialias=True),
+                transforms.CenterCrop(dims),
+                transforms.ToTensor(),
+            ]
+        )
 
     def __call__(self, image: PIL.Image) -> T.Tensor:
-        return self.resizer(self.piltotensor(image))
+        return self.transform(image)
 
 
 class CelebADatasets(NamedTuple):

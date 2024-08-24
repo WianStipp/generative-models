@@ -1,5 +1,6 @@
 import torch as T
 from torch.utils import data as torch_data
+import os
 from datetime import datetime
 import random
 from torch.utils import tensorboard
@@ -8,7 +9,7 @@ from torchvision.utils import make_grid
 
 from vae import modeling, data
 
-N_EPOCHS = 3
+N_EPOCHS = 30
 BATCH_SIZE = 64
 LOG_STEPS = 10
 
@@ -19,13 +20,17 @@ def main() -> None:
 
     device = T.device("cuda") if T.cuda.is_available() else T.device("cpu")
     config = modeling.BaseVAEConfig.from_path("config/vae/cnn.yml")
-    vae = modeling.VAE.from_config(config).to(device).train()
+    vae = modeling.VAE.from_config(config).to(device)
     train = data.get_celeba_split("train")
     validation = data.get_celeba_split("valid")
     test = data.get_celeba_split("test")
-    train_loader = torch_data.DataLoader(train, batch_size=BATCH_SIZE, shuffle=True)
-    validation_loader = torch_data.DataLoader(validation, batch_size=BATCH_SIZE)
-    optimizer = T.optim.AdamW(vae.parameters(), lr=3e-4)
+    train_loader = torch_data.DataLoader(
+        train, batch_size=BATCH_SIZE, shuffle=True, num_workers=32
+    )
+    validation_loader = torch_data.DataLoader(
+        validation, batch_size=BATCH_SIZE, num_workers=32
+    )
+    optimizer = T.optim.AdamW(vae.parameters(), lr=1e-3)
 
     def train_epoch_step(epoch_idx: int) -> None:
         vae.train()
@@ -73,10 +78,17 @@ def main() -> None:
             "Reconstructed Images", reconstructed_grid, global_step=epoch_idx
         )
 
+    def save_checkpoint(epoch_idx: int) -> None:
+        savedir = os.environ.get("VAE-CHECKPOINT-DIR", "model-checkpoints")
+        os.makedirs(savedir, exist_ok=True)
+        checkpoint_path = os.path.join(savedir, f"celeba-vae-epoch{epoch_idx}.pt")
+        T.save(vae.state_dict(), checkpoint_path)
+
     for epoch in range(N_EPOCHS):
         validation_step(epoch)
         train_epoch_step(epoch)
         generate_step(epoch)
+        save_checkpoint(epoch)
 
 
 if __name__ == "__main__":
