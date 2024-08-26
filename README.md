@@ -2,14 +2,7 @@
 
 A study of generative models.
 
-- [X] VAEs
-- [ ] Autoregressive models
-- [ ] Normalizing flow models
-- [ ] Energy-based models
-- [ ] Diffusion models
-- [ ] Music generation
-- [ ] World models
-- [ ] Multimodal models
+- [X] VAEs (video out soon!)
 
 VAE trained on [CelebA](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html
 ):
